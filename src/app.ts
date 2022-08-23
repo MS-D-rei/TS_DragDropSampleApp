@@ -12,9 +12,27 @@ function AutoBind(_: any, _2: string | Symbol, descriptor: PropertyDescriptor) {
   return adjustedDescriptor;
 }
 
+// Project Type
+enum ProjectStatus {
+  Active,
+  Finished,
+}
+
+class Project {
+  constructor(
+    public id: string,
+    public title: string,
+    public description: string,
+    public people: number,
+    public status: ProjectStatus
+  ) {}
+}
+
 // Project State Management globally
+type Listener = (items: Project[]) => void;
+
 class ProjectState {
-  private listeners: any[] = [];
+  private listeners: Listener[] = [];
   private projects: any[] = [];
   private static instance: ProjectState;
 
@@ -29,17 +47,18 @@ class ProjectState {
     }
   }
 
-  addListener(listenerFn: Function) {
+  addListener(listenerFn: Listener) {
     this.listeners.push(listenerFn);
   }
 
   addProject(title: string, description: string, numOfPeople: number) {
-    const newProject = {
-      id: Math.random().toString(),
-      title: title,
-      description: description,
-      people: numOfPeople,
-    };
+    const newProject = new Project(
+      Math.random().toString(),
+      title,
+      description,
+      numOfPeople,
+      ProjectStatus.Active
+    );
     // Add new project to projects array
     this.projects.push(newProject);
     // Call function stocks in listeners to react and render all current projects.
@@ -104,7 +123,7 @@ class ProjectList {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
   sectionElement: HTMLElement;
-  assignedProjects: any[] = [];
+  assignedProjects: Project[] = [];
 
   constructor(private type: "active" | "finished") {
     // Select template to render
@@ -125,7 +144,7 @@ class ProjectList {
     this.sectionElement.id = `${this.type}-projects`;
 
     // Add stock of function call for when adding new project.
-    projectState.addListener((projects: any[]) => {
+    projectState.addListener((projects: Project[]) => {
       this.assignedProjects = projects;
       this.renderProjects();
     });
@@ -137,13 +156,15 @@ class ProjectList {
   }
 
   // Before this Fn is called, renderContent() will be called, so can use this.type-project id.
-  // 
+  //
   private renderProjects() {
     // Identify which project's Unorder List to render
-    const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
+    const listEl = document.getElementById(
+      `${this.type}-projects-list`
+    )! as HTMLUListElement;
     // Add all projects with 'li' element to 'ul'
     for (const projectItem of this.assignedProjects) {
-      const listItem = document.createElement('li');
+      const listItem = document.createElement("li");
       listItem.textContent = projectItem.title;
       listEl.appendChild(listItem);
     }
