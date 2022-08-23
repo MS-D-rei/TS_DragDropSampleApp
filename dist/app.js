@@ -46,10 +46,34 @@ function validate(validatableInput) {
     }
     return isValid;
 }
+class ProjectList {
+    type;
+    templateElement;
+    hostElement;
+    sectionElement;
+    constructor(type) {
+        this.type = type;
+        this.templateElement = document.getElementById('project-list');
+        this.hostElement = document.getElementById('app');
+        const importedContent = document.importNode(this.templateElement.content, true);
+        this.sectionElement = importedContent.firstElementChild;
+        this.sectionElement.id = `${this.type}-projects`;
+        this.attach();
+        this.renderContent();
+    }
+    renderContent() {
+        const listId = `${this.type}-project-list`;
+        this.sectionElement.querySelector('ul').id = listId;
+        this.sectionElement.querySelector('h2').textContent = this.type.toUpperCase() + 'Projects';
+    }
+    attach() {
+        this.hostElement.insertAdjacentElement('beforeend', this.sectionElement);
+    }
+}
 class ProjectInput {
     templateElement;
     hostElement;
-    element;
+    formElement;
     titleInputElement;
     descriptionInputElement;
     peopleInputElement;
@@ -57,11 +81,11 @@ class ProjectInput {
         this.templateElement = document.getElementById("project-input");
         this.hostElement = document.getElementById("app");
         const importedContent = document.importNode(this.templateElement.content, true);
-        this.element = importedContent.firstElementChild;
-        this.element.id = "user-input";
-        this.titleInputElement = this.element.querySelector("#title");
-        this.descriptionInputElement = this.element.querySelector("#description");
-        this.peopleInputElement = this.element.querySelector("#people");
+        this.formElement = importedContent.firstElementChild;
+        this.formElement.id = "user-input";
+        this.titleInputElement = this.formElement.querySelector("#title");
+        this.descriptionInputElement = this.formElement.querySelector("#description");
+        this.peopleInputElement = this.formElement.querySelector("#people");
         this.configure();
         this.attach();
     }
@@ -111,13 +135,15 @@ class ProjectInput {
         }
     }
     configure() {
-        this.element.addEventListener("submit", this.submitHandler);
+        this.formElement.addEventListener("submit", this.submitHandler);
     }
     attach() {
-        this.hostElement.insertAdjacentElement("afterbegin", this.element);
+        this.hostElement.insertAdjacentElement("afterbegin", this.formElement);
     }
 }
 __decorate([
     AutoBind
 ], ProjectInput.prototype, "submitHandler", null);
 const prjInput = new ProjectInput();
+const activeProjectList = new ProjectList('active');
+const finishedProjectList = new ProjectList('finished');

@@ -60,7 +60,41 @@ function validate(validatableInput: Validatable) {
   return isValid;
 }
 
-// Class ProjectInput
+// Class Project List
+class ProjectList {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+  sectionElement: HTMLElement;
+
+  constructor(private type: 'active' | 'finished') {
+    this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
+    this.hostElement = document.getElementById('app') as HTMLDivElement;
+    
+    const importedContent = document.importNode(
+      this.templateElement.content,
+      true
+    )
+
+    this.sectionElement = importedContent.firstElementChild as HTMLElement;
+    this.sectionElement.id = `${this.type}-projects`;
+
+    this.attach();
+    this.renderContent();
+  }
+
+  private renderContent() {
+    const listId = `${this.type}-project-list`;
+    this.sectionElement.querySelector('ul')!.id = listId;
+    this.sectionElement.querySelector('h2')!.textContent = this.type.toUpperCase() + 'Projects';
+
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement('beforeend', this.sectionElement)
+  }
+}
+
+// Class Project Input
 class ProjectInput {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
@@ -151,9 +185,13 @@ class ProjectInput {
     this.formElement.addEventListener("submit", this.submitHandler); // when submitHandler is executed, 'this' of this function will be used.
   }
 
+  // 
   private attach() {
     this.hostElement.insertAdjacentElement("afterbegin", this.formElement);
   }
 }
 
 const prjInput = new ProjectInput();
+
+const activeProjectList = new ProjectList('active');
+const finishedProjectList = new ProjectList('finished');
