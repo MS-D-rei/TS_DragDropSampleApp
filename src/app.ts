@@ -12,6 +12,45 @@ function AutoBind(_: any, _2: string | Symbol, descriptor: PropertyDescriptor) {
   return adjustedDescriptor;
 }
 
+// Project State Management globally
+class ProjectState {
+  private listeners: any[] = [];
+  private projects: any[] = [];
+  private static instance: ProjectState;
+
+  private constructor() {}
+
+  static getInstance() {
+    if (this.instance) {
+      return this.instance;
+    } else {
+      this.instance = new ProjectState();
+      return this.instance;
+    }
+  }
+
+  addListener(listenerFn: Function) {
+    this.listeners.push(listenerFn);
+  }
+
+  addProject(title: string, description: string, numOfPeople: number) {
+    const newProject = {
+      id: Math.random().toString(),
+      title: title,
+      description: description,
+      people: numOfPeople,
+    };
+    // Add new project to projects array
+    this.projects.push(newProject);
+    // Call function stocks in listeners to react and render all current projects.
+    for (const listenerFn of this.listeners) {
+      listenerFn(this.projects.slice()); // slice is for passing copy of Array of current all projects
+    }
+  }
+}
+// Make sure only one state (Singleton)
+const projectState = ProjectState.getInstance();
+
 // Validation
 interface Validatable {
   value: string | number;
@@ -65,32 +104,60 @@ class ProjectList {
   templateElement: HTMLTemplateElement;
   hostElement: HTMLDivElement;
   sectionElement: HTMLElement;
+  assignedProjects: any[] = [];
 
-  constructor(private type: 'active' | 'finished') {
-    this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
-    this.hostElement = document.getElementById('app') as HTMLDivElement;
-    
+  constructor(private type: "active" | "finished") {
+    // Select template to render
+    this.templateElement = document.getElementById(
+      "project-list"
+    )! as HTMLTemplateElement;
+    // Set starting point
+    this.hostElement = document.getElementById("app") as HTMLDivElement;
+
+    // copy the content of the template
     const importedContent = document.importNode(
       this.templateElement.content,
       true
-    )
+    );
 
+    // Add id to the selected section
     this.sectionElement = importedContent.firstElementChild as HTMLElement;
     this.sectionElement.id = `${this.type}-projects`;
 
+    // Add stock of function call for when adding new project.
+    projectState.addListener((projects: any[]) => {
+      this.assignedProjects = projects;
+      this.renderProjects();
+    });
+
+    // Attach the frame of the selected section on the starting point
     this.attach();
+    // Add id to ul and title of the project list
     this.renderContent();
   }
 
-  private renderContent() {
-    const listId = `${this.type}-project-list`;
-    this.sectionElement.querySelector('ul')!.id = listId;
-    this.sectionElement.querySelector('h2')!.textContent = this.type.toUpperCase() + 'Projects';
+  // Before this Fn is called, renderContent() will be called, so can use this.type-project id.
+  // 
+  private renderProjects() {
+    // Identify which project's Unorder List to render
+    const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
+    // Add all projects with 'li' element to 'ul'
+    for (const projectItem of this.assignedProjects) {
+      const listItem = document.createElement('li');
+      listItem.textContent = projectItem.title;
+      listEl.appendChild(listItem);
+    }
+  }
 
+  private renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.sectionElement.querySelector("ul")!.id = listId;
+    this.sectionElement.querySelector("h2")!.textContent =
+      this.type.toUpperCase() + "Projects";
   }
 
   private attach() {
-    this.hostElement.insertAdjacentElement('beforeend', this.sectionElement)
+    this.hostElement.insertAdjacentElement("beforeend", this.sectionElement);
   }
 }
 
@@ -126,7 +193,9 @@ class ProjectInput {
       "#people"
     )! as HTMLInputElement;
 
+    // Contain all reaction when the submit button is pressed.
     this.configure();
+    // Attach the frame of the input form on the starting point (app afterbegin)
     this.attach();
   }
 
@@ -177,6 +246,8 @@ class ProjectInput {
     if (Array.isArray(userInput)) {
       const [title, description, people] = userInput;
       console.log(title, description, people);
+      // Add this project to the global project state.
+      projectState.addProject(title, description, people);
       this.clearInputs();
     }
   }
@@ -185,7 +256,7 @@ class ProjectInput {
     this.formElement.addEventListener("submit", this.submitHandler); // when submitHandler is executed, 'this' of this function will be used.
   }
 
-  // 
+  //
   private attach() {
     this.hostElement.insertAdjacentElement("afterbegin", this.formElement);
   }
@@ -193,5 +264,5 @@ class ProjectInput {
 
 const prjInput = new ProjectInput();
 
-const activeProjectList = new ProjectList('active');
-const finishedProjectList = new ProjectList('finished');
+const activeProjectList = new ProjectList("active");
+const finishedProjectList = new ProjectList("finished");
