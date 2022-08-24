@@ -118,50 +118,94 @@ function validate(validatableInput: Validatable) {
   return isValid;
 }
 
-// Class Project List
-class ProjectList {
+// Base Class, Component
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
   templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  sectionElement: HTMLElement;
-  assignedProjects: Project[] = [];
+  hostElement: T;
+  element: U;
 
-  constructor(private type: "active" | "finished") {
+  constructor(
+    templateId: string,
+    hostElementId: string,
+    isInsertAtStart: boolean,
+    newElementId?: string
+  ) {
     // Select template to render
     this.templateElement = document.getElementById(
-      "project-list"
+      templateId
     )! as HTMLTemplateElement;
     // Set starting point
-    this.hostElement = document.getElementById("app") as HTMLDivElement;
+    this.hostElement = document.getElementById(hostElementId)! as T;
 
     // copy the content of the template
     const importedContent = document.importNode(
       this.templateElement.content,
       true
     );
-
     // Add id to the selected section
-    this.sectionElement = importedContent.firstElementChild as HTMLElement;
-    this.sectionElement.id = `${this.type}-projects`;
+    this.element = importedContent.firstElementChild as U;
+    if (newElementId) {
+      this.element.id = newElementId;
+    }
+    this.attach(isInsertAtStart);
+  }
 
-    // Add stock of function call for when adding new project.
-    projectState.addListener((projects: Project[]) => {
-      this.assignedProjects = projects;
-      this.renderProjects();
-    });
+  // Attach the frame of the selected section on the starting point
+  private attach(isInsertAtStart: boolean) {
+    this.hostElement.insertAdjacentElement(
+      isInsertAtStart ? "afterbegin" : "beforeend",
+      this.element
+    );
+  }
 
-    // Attach the frame of the selected section on the starting point
-    this.attach();
-    // Add id to ul and title of the project list
+  abstract configure(): void;
+  abstract renderContent(): void;
+}
+
+// Class Project List
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+  assignedProjects: Project[] = [];
+
+  constructor(private type: "active" | "finished") {
+    super("project-list", "app", false, `${type}-projects`);
+
+    // this.attach(); /* now this move to the base class, Component */
+    this.configure();
     this.renderContent();
   }
 
+  configure(): void {
+    // Add stock of function call for when adding new project.
+    projectState.addListener((projects: Project[]) => {
+      // Select which project list
+      const relevantProjects = projects.filter((project) => {
+        if (this.type === "active") {
+          return project.status === ProjectStatus.Active;
+        }
+        return project.status === ProjectStatus.Finished;
+      });
+      this.assignedProjects = relevantProjects;
+      // Render all projects in the selected list
+      this.renderProjects();
+    });
+  }
+
+  // Add id to ul and title of the project list
+  renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.element.querySelector("ul")!.id = listId;
+    this.element.querySelector("h2")!.textContent =
+      this.type.toUpperCase() + " PROJECTS";
+  }
+
   // Before this Fn is called, renderContent() will be called, so can use this.type-project id.
-  //
   private renderProjects() {
     // Identify which project's Unorder List to render
     const listEl = document.getElementById(
       `${this.type}-projects-list`
     )! as HTMLUListElement;
+    // To avoid duplication, clean all rendered contents before rendering all projects.
+    listEl.innerHTML = "";
     // Add all projects with 'li' element to 'ul'
     for (const projectItem of this.assignedProjects) {
       const listItem = document.createElement("li");
@@ -170,54 +214,36 @@ class ProjectList {
     }
   }
 
-  private renderContent() {
-    const listId = `${this.type}-projects-list`;
-    this.sectionElement.querySelector("ul")!.id = listId;
-    this.sectionElement.querySelector("h2")!.textContent =
-      this.type.toUpperCase() + "Projects";
-  }
-
-  private attach() {
-    this.hostElement.insertAdjacentElement("beforeend", this.sectionElement);
-  }
+  // Now base class contains this method
+  // private attach() {
+  //   this.hostElement.insertAdjacentElement("beforeend", this.sectionElement);
+  // }
 }
 
 // Class Project Input
-class ProjectInput {
-  templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  formElement: HTMLFormElement;
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
   titleInputElement: HTMLInputElement;
   descriptionInputElement: HTMLInputElement;
   peopleInputElement: HTMLInputElement;
 
   constructor() {
-    this.templateElement = document.getElementById(
-      "project-input"
-    )! as HTMLTemplateElement;
-    this.hostElement = document.getElementById("app") as HTMLDivElement;
+    super("project-input", "app", true, "user-input");
 
-    const importedContent = document.importNode(
-      this.templateElement.content,
-      true
-    );
-    this.formElement = importedContent.firstElementChild as HTMLFormElement;
-    this.formElement.id = "user-input";
-
-    this.titleInputElement = this.formElement.querySelector(
+    this.titleInputElement = this.element.querySelector(
       "#title"
     )! as HTMLInputElement;
-    this.descriptionInputElement = this.formElement.querySelector(
+    this.descriptionInputElement = this.element.querySelector(
       "#description"
     )! as HTMLInputElement;
-    this.peopleInputElement = this.formElement.querySelector(
+    this.peopleInputElement = this.element.querySelector(
       "#people"
     )! as HTMLInputElement;
 
     // Contain all reaction when the submit button is pressed.
     this.configure();
+    // Component class has this method
     // Attach the frame of the input form on the starting point (app afterbegin)
-    this.attach();
+    // this.attach();
   }
 
   private gatherUserInput(): [string, string, number] | void {
@@ -273,14 +299,15 @@ class ProjectInput {
     }
   }
 
-  private configure() {
-    this.formElement.addEventListener("submit", this.submitHandler); // when submitHandler is executed, 'this' of this function will be used.
+  configure() {
+    this.element.addEventListener("submit", this.submitHandler); // when submitHandler is executed, 'this' of this function will be used.
   }
 
-  //
-  private attach() {
-    this.hostElement.insertAdjacentElement("afterbegin", this.formElement);
-  }
+  renderContent(): void {}
+  // Now the base class, Component has this method
+  // private attach() {
+  //   this.hostElement.insertAdjacentElement("afterbegin", this.formElement);
+  // }
 }
 
 const prjInput = new ProjectInput();
