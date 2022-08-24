@@ -36,11 +36,18 @@ class Project {
         this.status = status;
     }
 }
-class ProjectState {
+class State {
     listeners = [];
+    addListener(listenerFn) {
+        this.listeners.push(listenerFn);
+    }
+}
+class ProjectState extends State {
     projects = [];
     static instance;
-    constructor() { }
+    constructor() {
+        super();
+    }
     static getInstance() {
         if (this.instance) {
             return this.instance;
@@ -49,9 +56,6 @@ class ProjectState {
             this.instance = new ProjectState();
             return this.instance;
         }
-    }
-    addListener(listenerFn) {
-        this.listeners.push(listenerFn);
     }
     addProject(title, description, numOfPeople) {
         const newProject = new Project(Math.random().toString(), title, description, numOfPeople, ProjectStatus.Active);
