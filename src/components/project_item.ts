@@ -4,10 +4,10 @@
 /* /// <reference path="../decorators/autobind.ts" /> */
 /* /// <reference path="../state/project_state.ts" /> */
 
-import Component from "./base_component.js";
-import { Draggable } from "../models/drag_drop.js";
-import { Project } from "../models/project.js";
-import { AutoBind } from "../decorators/autobind.js";
+import Component from "./base_component";
+import { Draggable } from "../models/drag_drop";
+import { Project } from "../models/project";
+import { AutoBind } from "../decorators/autobind";
 
 // namespace App {
 // Class Project Item

@@ -3,10 +3,10 @@
 /* /// <reference path="../decorators/autobind.ts" /> */
 /* /// <reference path="../state/project_state.ts" /> */
 
-import Component from "./base_component.js";
-import { projectState } from "../state/project_state.js";
-import * as Validation from "../utils/validation.js";
-import { AutoBind } from "../decorators/autobind.js";
+import Component from "./base_component";
+import { projectState } from "../state/project_state";
+import * as Validation from "../utils/validation";
+import { AutoBind } from "../decorators/autobind";
 
 // namespace App {
 // Class Project Input
